@@ -118,41 +118,88 @@
     <div class="card-container" id="card">
         <!-- The Result (Underneath) -->
         <div class="prize-layer">
-            <div class="emoji">👶✨</div>
-            <h1>Oh Baby!</h1>
-            <p style="font-size: 18px; font-weight: normal; margin-top: 10px; margin-bottom: 5px;">A little one is<br>on the way...</p>
-            <p style="font-size: 24px; font-weight: bold; margin-top: 10px;">You're going to be<br>Grandparents! ❤️</p>
-            <div class="badge">Coming Oct 2026</div>
+            <div id="resultContent">
+                <!-- Content injected by JS -->
+            </div>
         </div>
         
         <!-- The Scratch Foil (Top) -->
         <canvas id="scratchCanvas"></canvas>
     </div>
 
-    <div class="instructions">Scratch to Reveal!</div>
+    <div class="instructions" id="instructions">Scratch to Reveal!</div>
+    <button id="nextBtn" style="display:none; margin-top: 20px; padding: 10px 25px; font-size: 18px; background: #fff; color: #333; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">Next Card ➡️</button>
 
     <script>
         const canvas = document.getElementById('scratchCanvas');
         const ctx = canvas.getContext('2d');
         const card = document.getElementById('card');
+        const nextBtn = document.getElementById('nextBtn');
+        const instructions = document.getElementById('instructions');
+        const resultContent = document.getElementById('resultContent');
 
-        // Set canvas size to match container
-        canvas.width = card.offsetWidth;
-        canvas.height = card.offsetHeight;
+        let stage = 0; // 0 = Loser 1, 1 = Loser 2, 2 = Winner
 
-        // 1. Draw the "Foil" Layer
-        function drawFoil() {
-            // Gold Gradient Background (Classic Lottery Style)
+        const stages = [
+            {
+                emoji: "🍒🍒🍋",
+                title: "Not a Winner",
+                text: "Better luck next time!",
+                badge: "Try Again",
+                btnText: "Play Next Card ➡️"
+            },
+            {
+                emoji: "😅",
+                title: "So Close!",
+                text: "Don't give up yet...",
+                badge: "One Last Try!",
+                btnText: "Final Chance! 🤞"
+            },
+            {
+                emoji: "👶✨",
+                title: "Oh Baby!",
+                text: "<span style='font-size:18px; display:block; margin-bottom:5px; font-weight:normal'>A little one is on the way...</span>You're going to be<br>Grandparents! ❤️",
+                badge: "Coming Oct 2026",
+                btnText: null // No button on final stage
+            }
+        ];
+
+        function loadStage(index) {
+            // Update Text
+            const data = stages[index];
+            resultContent.innerHTML = `
+                <div class="emoji">${data.emoji}</div>
+                <h1>${data.title}</h1>
+                <p>${data.text}</p>
+                <div class="badge">${data.badge}</div>
+            `;
+            
+            // Reset Button
+            nextBtn.style.display = 'none';
+            nextBtn.textContent = data.btnText;
+            instructions.style.display = 'block';
+
+            // Reset Canvas
+            canvas.width = card.offsetWidth;
+            canvas.height = card.offsetHeight;
+            
+            // Draw Foil
             const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            grd.addColorStop(0, '#bf953f');
-            grd.addColorStop(0.25, '#fcf6ba');
-            grd.addColorStop(0.5, '#b38728');
-            grd.addColorStop(0.75, '#fbf5b7');
-            grd.addColorStop(1, '#aa771c');
+            if (index === 2) {
+                // Gold for winner
+                grd.addColorStop(0, '#bf953f');
+                grd.addColorStop(1, '#aa771c');
+            } else {
+                // Silver/Grey for losers
+                grd.addColorStop(0, '#d7d7d7');
+                grd.addColorStop(1, '#9e9e9e');
+            }
+            
+            ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = grd;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Pattern (optional texture)
+            // Pattern
             ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
             for(let i=0; i<500; i++) {
                 ctx.beginPath();
@@ -161,27 +208,40 @@
             }
 
             // Top Text
-            ctx.fillStyle = "#3e2723"; // Dark brown for contrast
+            ctx.fillStyle = "#3e2723";
             ctx.font = "bold 32px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            
-            // Draw text with shadow
             ctx.shadowColor = "rgba(255,255,255,0.5)";
             ctx.shadowBlur = 2;
-            ctx.fillText("FAMILY DAY", canvas.width/2, canvas.height/2 - 25);
+            
+            let label = "FAMILY DAY";
+            if(index === 1) label = "BONUS CARD";
+            if(index === 2) label = "JACKPOT";
+
+            ctx.fillText(label, canvas.width/2, canvas.height/2 - 25);
             ctx.fillText("REWARD", canvas.width/2, canvas.height/2 + 25);
             
             ctx.shadowColor = "transparent";
             ctx.font = "bold 16px Arial";
-            ctx.fillText("★ TAP TO REVEAL ★", canvas.width/2, canvas.height/2 + 60);
+            ctx.fillText(index === 2 ? "★ GRAND PRIZE ★" : "★ SCRATCH ME ★", canvas.width/2, canvas.height/2 + 60);
+
+            // Reset Scratch State
+            isDrawing = false;
         }
 
-        drawFoil();
+        // Initialize First Stage
+        loadStage(0);
+
+        // Next Button Click
+        nextBtn.addEventListener('click', () => {
+            stage++;
+            if(stage < stages.length) {
+                loadStage(stage);
+            }
+        });
 
         // 2. Scratch Interaction
-        let isDrawing = false;
-
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
             let clientX, clientY;
@@ -202,14 +262,29 @@
 
         function scratch(e) {
             if (!isDrawing) return;
-            e.preventDefault(); // Stop scrolling on touch
+            e.preventDefault();
 
             const pos = getMousePos(e);
             
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2); // Brush size
+            ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
             ctx.fill();
+
+            // Check if scratched enough to show button
+            checkReveal();
+        }
+
+        function checkReveal() {
+            // Simple check: if we scratched a bit, show the next button after a delay
+            // In a real app we'd count pixels, but timer is smoother for UX
+            if(nextBtn.style.display === 'none' && stage < 2) {
+                 clearTimeout(window.revealTimer);
+                 window.revealTimer = setTimeout(() => {
+                     nextBtn.style.display = 'block';
+                     instructions.style.display = 'none';
+                 }, 1500); // Show button 1.5s after scratching starts
+            }
         }
 
         // Mouse Events
