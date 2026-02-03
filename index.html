@@ -66,8 +66,15 @@
         }
 
         .emoji {
-            font-size: 50px;
+            font-size: 80px;
             margin-bottom: 15px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         /* The Scratch Canvas Layer */
@@ -101,7 +108,7 @@
     <div class="card-container" id="card">
         <!-- The Result (Underneath) -->
         <div class="prize-layer">
-            <div class="emoji">👶🍼</div>
+            <div class="emoji">👶🥰✨</div>
             <div class="prize-text">You're going to be<br>Grandparents!</div>
             <div class="date-text">Coming Oct 2026</div>
         </div>
