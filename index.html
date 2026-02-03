@@ -128,7 +128,7 @@
     </div>
 
     <div class="instructions" id="instructions">Scratch to Reveal!</div>
-    <button id="nextBtn" style="display:none; margin-top: 20px; padding: 10px 25px; font-size: 18px; background: #fff; color: #333; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">Next Card ➡️</button>
+    <button id="nextBtn" style="opacity:0; pointer-events:none; margin-top: 20px; padding: 10px 25px; font-size: 18px; background: #fff; color: #333; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: opacity 0.5s ease;"></button>
 
     <script>
         const canvas = document.getElementById('scratchCanvas');
@@ -139,6 +139,7 @@
         const resultContent = document.getElementById('resultContent');
 
         let stage = 0; // 0 = Loser 1, 1 = Loser 2, 2 = Winner
+        let hasScratched = false;
 
         const stages = [
             {
@@ -175,8 +176,14 @@
             `;
             
             // Reset Button
-            nextBtn.style.display = 'none';
-            nextBtn.textContent = data.btnText;
+            nextBtn.style.opacity = '0';
+            nextBtn.style.pointerEvents = 'none';
+            if(data.btnText) {
+                nextBtn.textContent = data.btnText;
+                nextBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'none';
+            }
             instructions.style.display = 'block';
 
             // Reset Canvas
@@ -228,6 +235,7 @@
 
             // Reset Scratch State
             isDrawing = false;
+            hasScratched = false;
         }
 
         // Initialize First Stage
@@ -272,18 +280,13 @@
             ctx.fill();
 
             // Check if scratched enough to show button
-            checkReveal();
-        }
-
-        function checkReveal() {
-            // Simple check: if we scratched a bit, show the next button after a delay
-            // In a real app we'd count pixels, but timer is smoother for UX
-            if(nextBtn.style.display === 'none' && stage < 2) {
-                 clearTimeout(window.revealTimer);
-                 window.revealTimer = setTimeout(() => {
-                     nextBtn.style.display = 'block';
-                     instructions.style.display = 'none';
-                 }, 1500); // Show button 1.5s after scratching starts
+            if (!hasScratched && stage < 2) {
+                hasScratched = true;
+                setTimeout(() => {
+                    nextBtn.style.opacity = '1';
+                    nextBtn.style.pointerEvents = 'auto';
+                    instructions.style.display = 'none';
+                }, 300); // Fast 300ms delay for smoother feel
             }
         }
 
